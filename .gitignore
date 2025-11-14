@@ -4,6 +4,4 @@
 *.class
 
 # Eclipse project-specific files
-.project
-.classpath
 /.settings/
