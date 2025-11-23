@@ -4,5 +4,5 @@ import javax.swing.JTextArea;
 public interface OperatingSystemAlgorithm {
 	String getInstructions();
     
-    void run(JTextArea outputArea);
+    void run();
 }

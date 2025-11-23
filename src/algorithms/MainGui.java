@@ -17,11 +17,12 @@ public class MainGui {
     private JButton btnRR;
     private JButton btnCS;
     
+    /*
     private JPanel resultsPanel;
     private JTextArea resArea;
     private JScrollPane resScroll;
     private JButton btnBack; 
-    
+    */
     //labels
     private JLabel groupLabel;
     private JLabel titleLabel;
@@ -61,7 +62,7 @@ public class MainGui {
         homePanel.setLayout(new BoxLayout(homePanel, BoxLayout.Y_AXIS));
         homePanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        titleLabel = new JLabel("Welcome to the Operating System ALgorithm Simulator!");
+        titleLabel = new JLabel("Welcome to the Operating System Algorithm Simulator!");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -113,6 +114,7 @@ public class MainGui {
         homePanel.add(btnCS);
         homePanel.add(Box.createVerticalGlue()); 
 
+        /*
         resultsPanel = new JPanel(new BorderLayout(10, 10)); 
         resultsPanel.setBorder(new EmptyBorder(10, 10, 10, 10)); 
 
@@ -124,9 +126,9 @@ public class MainGui {
         
         btnBack = new JButton("Back to Home");
         resultsPanel.add(btnBack, BorderLayout.SOUTH); 
-        
+        */
         cardContainer.add(homePanel, "HOME");    
-        cardContainer.add(resultsPanel, "RESULTS"); 
+        //cardContainer.add(resultsPanel, "RESULTS"); 
         
         groupLabel = new JLabel("Laraze, Santos, Teodoro | 3ITC", SwingConstants.CENTER);
         groupLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -152,12 +154,13 @@ public class MainGui {
                 runAlgorithm(larazeCSAlgo);
             }
         });
-        
+        /*
         btnBack.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 card1.show(cardContainer, "HOME");
             }
         });
+        */
     }
 
     private void runAlgorithm(OperatingSystemAlgorithm alg) {
@@ -171,7 +174,7 @@ public class MainGui {
         );
         
         if (choice == JOptionPane.YES_OPTION) {
-            alg.run(resArea); 
+            alg.run(); 
             
         } 
     }
