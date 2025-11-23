@@ -8,8 +8,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.NumberFormat;
-import java.util.Arrays;
-import java.util.Comparator;
 
 // Santos
 public class PreemptivePriority implements OperatingSystemAlgorithm {
@@ -87,29 +85,12 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
         table = new JTable(tableModel);
         table.setRowHeight(25);
         table.setSurrendersFocusOnKeystroke(true);
-        table.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_DELETE || e.getKeyCode() == java.awt.event.KeyEvent.VK_BACK_SPACE) {
-                    int row = table.getSelectedRow();
-                    int col = table.getSelectedColumn();
-                    if (row >= 0 && col >= 1) {
-                        table.setValueAt(null, row, col); 
-                    }
-                }
-            }
-        });
-        
-        // validate input
-        NumberFormatter numFormatter = new NumberFormatter(NumberFormat.getIntegerInstance());
-        numFormatter.setValueClass(Integer.class);
-        numFormatter.setMinimum(0);
-        numFormatter.setAllowsInvalid(false);
-        ((NumberFormat) numFormatter.getFormat()).setGroupingUsed(false);
+        table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+      
+        table.getColumnModel().getColumn(1).setCellEditor(createIntegerEditor(0));
+        table.getColumnModel().getColumn(2).setCellEditor(createIntegerEditor(1));
+        table.getColumnModel().getColumn(3).setCellEditor(createIntegerEditor(1));
 
-        PPIntegerCellEditor editor = new PPIntegerCellEditor(numFormatter);
-        table.getColumnModel().getColumn(1).setCellEditor(editor);
-        table.getColumnModel().getColumn(2).setCellEditor(editor);
-        table.getColumnModel().getColumn(3).setCellEditor(editor);
 
         // input to table
         inputDialog = new JDialog();
@@ -117,11 +98,19 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
         inputDialog.setModal(true);
         inputDialog.setLayout(new BorderLayout());
         inputDialog.add(new JScrollPane(table), BorderLayout.CENTER);
+        
+        GradientPanel dialogPanel = new GradientPanel();
+        dialogPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        scrollPaneInput = new JScrollPane(table);
+        dialogPanel.add(scrollPaneInput, BorderLayout.CENTER);
 
         submitButton = new JButton("Submit and Calculate");
-        JPanel btnPanel = new JPanel();
+        btnPanel = new JPanel();
+        btnPanel.setOpaque(false);
         btnPanel.add(submitButton);
-        inputDialog.add(btnPanel, BorderLayout.SOUTH);
+        
+        dialogPanel.add(btnPanel, BorderLayout.SOUTH);
+        inputDialog.setContentPane(dialogPanel);
         
         submitButton.addActionListener(new ActionListener() {
             @Override
@@ -153,17 +142,15 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
                 inputDialog.dispose();
             }
         });
-
+        
         inputDialog.setSize(500, 400);
         inputDialog.setLocationRelativeTo(null);
         inputDialog.setVisible(true);
     }
 
     private PPGanttChart[] runPPAlgo(PPProcess[] processes) {
-        // STUDENT STYLE: Create a fixed large array instead of List
-        // 1000 is safe because you usually won't have that many context switches in a small homework
         PPGanttChart[] ganttChart = new PPGanttChart[1000]; 
-        int ganttIndex = 0; // Keeps track of how many we used
+        int ganttIndex = 0; 
 
         int total = processes.length;
         int currTime = 0;
@@ -300,4 +287,70 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
 
         resultFrame.setVisible(true);
     }
+    private DefaultCellEditor createIntegerEditor(int minimumValue) {
+        NumberFormatter formatter = new NumberFormatter(NumberFormat.getIntegerInstance());
+        formatter.setValueClass(Integer.class);
+        formatter.setMinimum(minimumValue);
+        formatter.setAllowsInvalid(true);
+        formatter.setCommitsOnValidEdit(true);
+        ((NumberFormat) formatter.getFormat()).setGroupingUsed(false);
+
+        JFormattedTextField ftf = new JFormattedTextField(formatter);
+
+        ftf.setFocusLostBehavior(JFormattedTextField.PERSIST);
+
+        ftf.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    int end = ftf.getText().length();
+                    ftf.setSelectionStart(end);
+                    ftf.setSelectionEnd(end);
+                });
+            }
+        });
+
+        return new DefaultCellEditor(ftf) {
+            @Override
+            public Component getTableCellEditorComponent(JTable tbl, Object value, boolean isSelected, int row, int col) {
+                ftf.setValue(null);
+                ftf.setText("");
+
+                if (value != null) {
+                    String s = value.toString().trim();
+                    if (!s.isEmpty()) {
+                        ftf.setValue(Integer.parseInt(s));
+                    } else {
+                        ftf.setValue(null);
+                        ftf.setText("");
+                    }
+                }
+
+                SwingUtilities.invokeLater(() -> {
+                    int end = ftf.getText().length();
+                    ftf.setSelectionStart(end);
+                    ftf.setSelectionEnd(end);
+                });
+
+                return super.getTableCellEditorComponent(tbl, value, isSelected, row, col);
+            }
+
+            @Override
+            public boolean stopCellEditing() {
+            	String text = ftf.getText().trim();
+                if (text.isEmpty()) {
+                    ftf.setValue(null);
+                    return super.stopCellEditing();
+                }
+
+                try {
+                    ftf.commitEdit();
+                } catch (Exception e) {
+                    return false;
+                }
+                return super.stopCellEditing();
+            }
+        };
+    }
+
 }
