@@ -7,23 +7,34 @@ import javax.swing.text.NumberFormatter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 
 // Santos
 public class PreemptivePriority implements OperatingSystemAlgorithm {
 
+    
     // run method variables
     private int num;
     private JDialog inputDialog;
     private JTable table;
     private DefaultTableModel tableModel;
     private JButton submitButton;
+    private JScrollPane scrollPaneInput;
+    private JPanel btnPanel;
+
+    // results window variables
+    private JFrame resultFrame;
+    private JTable resultTable;
+    private DefaultTableModel resultTableModel;
+    private JScrollPane tableScroll;
+    private PPGanttChartPanel ganttPanel;
+    private JPanel footerPanel;
+    private JPanel labelsPanel;
+    private JLabel labelAvgTAT;
+    private JLabel labelAvgWT;
+    private JButton btnBack;
 
     @Override
     public String getInstructions() {
@@ -46,8 +57,8 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
         try {
             num = Integer.parseInt(numInput);
             if (num <= 0) {
-            	new NumberFormatException();
-            	return;
+                new NumberFormatException(); 
+                return;
             }
             if (num > 100) {
                 JOptionPane.showMessageDialog(null, "Too many processes! Please enter a number less than or equal to 100.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -75,8 +86,20 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
 
         table = new JTable(tableModel);
         table.setRowHeight(25);
+        table.setSurrendersFocusOnKeystroke(true);
+        table.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_DELETE || e.getKeyCode() == java.awt.event.KeyEvent.VK_BACK_SPACE) {
+                    int row = table.getSelectedRow();
+                    int col = table.getSelectedColumn();
+                    if (row >= 0 && col >= 1) {
+                        table.setValueAt(null, row, col); 
+                    }
+                }
+            }
+        });
         
-        //validate input
+        // validate input
         NumberFormatter numFormatter = new NumberFormatter(NumberFormat.getIntegerInstance());
         numFormatter.setValueClass(Integer.class);
         numFormatter.setMinimum(0);
@@ -88,7 +111,7 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
         table.getColumnModel().getColumn(2).setCellEditor(editor);
         table.getColumnModel().getColumn(3).setCellEditor(editor);
 
-        // input dialog
+        // input to table
         inputDialog = new JDialog();
         inputDialog.setTitle("Input positive integer numbers");
         inputDialog.setModal(true);
@@ -126,11 +149,7 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
                 }
 
                 PPGanttChart[] ganttChart = runPPAlgo(processes);
-
-                Arrays.sort(processes, Comparator.comparingInt(p -> p.pid));
-
-                showResult(ganttChart, processes);
-                
+                showResult(ganttChart, processes);         
                 inputDialog.dispose();
             }
         });
@@ -141,8 +160,11 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
     }
 
     private PPGanttChart[] runPPAlgo(PPProcess[] processes) {
+        // STUDENT STYLE: Create a fixed large array instead of List
+        // 1000 is safe because you usually won't have that many context switches in a small homework
         PPGanttChart[] ganttChart = new PPGanttChart[1000]; 
-        int ganttIndex = 0;
+        int ganttIndex = 0; // Keeps track of how many we used
+
         int total = processes.length;
         int currTime = 0;
         int completedProcess = 0;
@@ -155,13 +177,13 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
                 if (p.arrivalTime <= currTime && !p.isComplete) {
                     if (bestProcess == null) bestProcess = p;
                     else if (p.priority < bestProcess.priority) 
-                    	bestProcess = p;
+                        bestProcess = p;
                     else if (p.priority == bestProcess.priority && p.arrivalTime < bestProcess.arrivalTime) 
-                    	bestProcess = p;
+                        bestProcess = p;
                     else if (p.priority == bestProcess.priority && p.arrivalTime == bestProcess.arrivalTime && p.remainingBurstTime < bestProcess.remainingBurstTime) 
-                    	bestProcess = p;
+                        bestProcess = p;
                     else if (p.priority == bestProcess.priority && p.arrivalTime == bestProcess.arrivalTime && p.remainingBurstTime == bestProcess.remainingBurstTime && p.pid < bestProcess.pid) 
-                    	bestProcess = p;
+                        bestProcess = p;
                 }
             }
 
@@ -200,11 +222,11 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
     }
 
     private void showResult(PPGanttChart[] ganttChart, PPProcess[] processes) {
-        JFrame frame = new JFrame("Calculation Results & Gantt Chart");
-        frame.setSize(900, 650); 
-        frame.setLocationRelativeTo(null);
-        frame.setAlwaysOnTop(true);
-        frame.setLayout(new BorderLayout());
+        resultFrame = new JFrame("Calculation Results & Gantt Chart");
+        resultFrame.setSize(900, 650); 
+        resultFrame.setLocationRelativeTo(null);
+        resultFrame.setAlwaysOnTop(true);
+        resultFrame.setLayout(new BorderLayout());
 
         String[] header = {"Process", "AT", "BT", "Priority", "CT", "Turnaround", "Waiting"};
         Object[][] tableCells = new Object[processes.length][7];
@@ -226,55 +248,56 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
             totalWT += p.waitingTime;
         }
 
-        DefaultTableModel tableModel = new DefaultTableModel(tableCells, header) {
+        resultTableModel = new DefaultTableModel(tableCells, header) {
             @Override
             public boolean isCellEditable(int row, int col) { 
-            	return false; 
+                return false; 
             } 
         };
         
-        JTable resultTable = new JTable(tableModel);
+        resultTable = new JTable(resultTableModel);
         resultTable.setRowHeight(25);
         resultTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 12));
-        JScrollPane tableScroll = new JScrollPane(resultTable);
+        
+        tableScroll = new JScrollPane(resultTable);
         tableScroll.setPreferredSize(new Dimension(800, 200));
         tableScroll.setBorder(BorderFactory.createTitledBorder("Final Process Table"));
 
-        PPGanttChartPanel ganttPanel = new PPGanttChartPanel(ganttChart);
+        ganttPanel = new PPGanttChartPanel(ganttChart);
         ganttPanel.setBorder(BorderFactory.createTitledBorder("Gantt Chart"));
         
-        JPanel footerPanel = new JPanel();
+        footerPanel = new JPanel();
         footerPanel.setLayout(new BoxLayout(footerPanel, BoxLayout.Y_AXIS)); 
         footerPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         footerPanel.setBackground(new Color(240, 240, 240));
 
-        JPanel labelsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 50, 10));
+        labelsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 50, 10));
         labelsPanel.setOpaque(false);
         
-        JLabel lblAvgTAT = new JLabel(String.format("Average Turnaround Time: %.2f ms", totalTAT / processes.length));
-        lblAvgTAT.setFont(new Font("SansSerif", Font.BOLD, 16));
-        lblAvgTAT.setForeground(new Color(0, 102, 204)); 
+        labelAvgTAT = new JLabel(String.format("Average Turnaround Time: %.2f ms", totalTAT / processes.length));
+        labelAvgTAT.setFont(new Font("SansSerif", Font.BOLD, 16));
+        labelAvgTAT.setForeground(new Color(0, 102, 204)); 
         
-        JLabel lblAvgWT = new JLabel(String.format("Average Waiting Time: %.2f ms", totalWT / processes.length));
-        lblAvgWT.setFont(new Font("SansSerif", Font.BOLD, 16));
-        lblAvgWT.setForeground(new Color(204, 51, 0)); 
+        labelAvgWT = new JLabel(String.format("Average Waiting Time: %.2f ms", totalWT / processes.length));
+        labelAvgWT.setFont(new Font("SansSerif", Font.BOLD, 16));
+        labelAvgWT.setForeground(new Color(204, 51, 0)); 
 
-        labelsPanel.add(lblAvgTAT);
-        labelsPanel.add(lblAvgWT);
+        labelsPanel.add(labelAvgTAT);
+        labelsPanel.add(labelAvgWT);
 
-        JButton btnBack = new JButton("Back to Home");
+        btnBack = new JButton("Back to Home");
         btnBack.setFont(new Font("SansSerif", Font.BOLD, 14));
         btnBack.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnBack.addActionListener(e -> frame.dispose()); 
+        btnBack.addActionListener(e -> resultFrame.dispose()); 
 
         footerPanel.add(labelsPanel);
         footerPanel.add(Box.createVerticalStrut(10));
         footerPanel.add(btnBack);
 
-        frame.add(tableScroll, BorderLayout.NORTH);
-        frame.add(ganttPanel, BorderLayout.CENTER);
-        frame.add(footerPanel, BorderLayout.SOUTH);
+        resultFrame.add(tableScroll, BorderLayout.NORTH);
+        resultFrame.add(ganttPanel, BorderLayout.CENTER);
+        resultFrame.add(footerPanel, BorderLayout.SOUTH);
 
-        frame.setVisible(true);
+        resultFrame.setVisible(true);
     }
 }
