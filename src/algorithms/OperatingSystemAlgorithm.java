@@ -1,5 +1,4 @@
 package algorithms;
-import javax.swing.JTextArea;
 
 public interface OperatingSystemAlgorithm {
 	String getInstructions();
