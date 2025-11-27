@@ -10,7 +10,7 @@ public class PPGanttChartPanel extends JPanel {
 
     private Color[] myColors = {
         Color.BLUE, Color.RED, Color.GREEN, Color.ORANGE, 
-        Color.MAGENTA, Color.CYAN, Color.PINK, Color.YELLOW
+        Color.MAGENTA, Color.CYAN, Color.PINK, Color.YELLOW, Color.LIGHT_GRAY, Color.decode("#1ba693"), Color.decode("#b0d48a")
     };
 
     public PPGanttChartPanel(PPGanttChart[] ganttChart) {

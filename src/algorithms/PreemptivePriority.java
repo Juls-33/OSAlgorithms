@@ -30,15 +30,18 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
     private PPGanttChartPanel ganttPanel;
     private JPanel footerPanel;
     private JPanel labelsPanel;
+    private JPanel labelsPanel2;
     private JLabel labelAvgTAT;
     private JLabel labelAvgWT;
+    private JLabel labelTotTAT;
+    private JLabel labelTotWT;
     private JButton btnBack;
 
     @Override
     public String getInstructions() {
         return "<html>"
                 + "<b>Preemptive Priority Scheduling</b><br><br>"
-                + "1. Enter the number of processes.<br>"
+                + "1. Enter the number of processes (2 to 12).<br>"
                 + "2. Fill in the table (Arrival, Burst, Priority).<br>"
                 + "3. The lower the number, the higher the priority (1 is the highest priority)<br>"
                 + "4. Click 'Submit' to see the <b>Result</b>.<br><br>"
@@ -48,7 +51,7 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
 
     @Override
     public void run() {
-        String numInput = JOptionPane.showInputDialog(null, "Enter number of processes: (e.g. 5)", "Preemptive Priority", JOptionPane.QUESTION_MESSAGE);
+        String numInput = JOptionPane.showInputDialog(null, "Enter number of processes: (e.g. 2 to 12 processes)", "Preemptive Priority", JOptionPane.QUESTION_MESSAGE);
        
         if (numInput == null) return;
 
@@ -56,14 +59,15 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
             num = Integer.parseInt(numInput);
             if (num <= 0) {
                 new NumberFormatException(); 
+                JOptionPane.showMessageDialog(null, "Too many processes! Please enter a number from 1 to 12.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (num > 100) {
-                JOptionPane.showMessageDialog(null, "Too many processes! Please enter a number less than or equal to 100.", "Error", JOptionPane.ERROR_MESSAGE);
+            if (num ==1 || num > 12) {
+                JOptionPane.showMessageDialog(null, "Too many processes! Please enter a number from 1 to 12.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null, "Please enter a valid positive number. (e.g. 5)", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Please enter a valid positive number. (2 to 12 processes)", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         
@@ -149,7 +153,7 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
     }
 
     private PPGanttChart[] runPPAlgo(PPProcess[] processes) {
-        PPGanttChart[] ganttChart = new PPGanttChart[1000]; 
+        PPGanttChart[] ganttChart = new PPGanttChart[20]; 
         int ganttIndex = 0; 
 
         int total = processes.length;
@@ -260,6 +264,8 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
 
         labelsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 50, 10));
         labelsPanel.setOpaque(false);
+        labelsPanel2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 50, 10));
+        labelsPanel2.setOpaque(false);
         
         labelAvgTAT = new JLabel(String.format("Average Turnaround Time: %.2f ms", totalTAT / processes.length));
         labelAvgTAT.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -268,15 +274,26 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
         labelAvgWT = new JLabel(String.format("Average Waiting Time: %.2f ms", totalWT / processes.length));
         labelAvgWT.setFont(new Font("SansSerif", Font.BOLD, 16));
         labelAvgWT.setForeground(new Color(204, 51, 0)); 
-
+        
+        labelTotTAT = new JLabel(String.format("Total Turnaround Time: %.2f ms", totalTAT));
+        labelTotTAT.setFont(new Font("SansSerif", Font.BOLD, 16));
+        labelTotTAT.setForeground(new Color(0, 102, 204)); 
+        
+        labelTotWT = new JLabel(String.format("Total Waiting Time: %.2f ms", totalWT));
+        labelTotWT.setFont(new Font("SansSerif", Font.BOLD, 16));
+        labelTotWT.setForeground(new Color(204, 51, 0)); 
+        
+        labelsPanel2.add(labelTotTAT);
         labelsPanel.add(labelAvgTAT);
+        labelsPanel2.add(labelTotWT);
         labelsPanel.add(labelAvgWT);
 
         btnBack = new JButton("Back to Home");
         btnBack.setFont(new Font("SansSerif", Font.BOLD, 14));
         btnBack.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnBack.addActionListener(e -> resultFrame.dispose()); 
-
+        
+        footerPanel.add(labelsPanel2);
         footerPanel.add(labelsPanel);
         footerPanel.add(Box.createVerticalStrut(10));
         footerPanel.add(btnBack);
