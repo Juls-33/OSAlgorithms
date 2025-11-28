@@ -1,30 +1,27 @@
 package algorithms;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CScan implements OperatingSystemAlgorithm {
+public class CircularScan2 implements OperatingSystemAlgorithm {
 
     private JDialog inputDialog;
     private JTable table;
     private DefaultTableModel tableModel;
-    private JTextField headField;
-    private JComboBox<String> dirBox;
     private JButton submitButton;
 
     @Override
     public String getInstructions() {
         return "<html>"
-                + "<b>C-SCAN Disk Scheduling</b><br><br>"
-                + "1. Enter the number of queue items (2–12).<br>"
-                + "2. Fill in the request values (0–999).<br>"
-                + "3. Enter the starting head position (0–999).<br>"
-                + "4. Select the direction (Right or Left).<br>"
+                + "<b>C-SCAN Disk Scheduling (Preemptive Priority GUI Style)</b><br><br>"
+                + "1. Enter the number of requests (2–12).<br>"
+                + "2. Fill in request values (0–999).<br>"
+                + "3. Enter starting head position (0–999).<br>"
+                + "4. Select direction (Right or Left).<br>"
                 + "5. Click 'Run C-SCAN' to see the result and graph.<br><br>"
                 + "<b>Do you want to continue?</b>"
                 + "</html>";
@@ -39,55 +36,55 @@ public class CScan implements OperatingSystemAlgorithm {
         inputDialog.setLocationRelativeTo(null);
         inputDialog.setLayout(new BorderLayout());
 
-        // ---------------- TOP PANEL ----------------
+        // Top Panel 
         JPanel top = new JPanel(new FlowLayout());
-        top.add(new JLabel("Number of Queue Items:"));
+        top.add(new JLabel("Number of Requests:"));
         JTextField countField = new JTextField(5);
         top.add(countField);
-
         JButton setBtn = new JButton("Set");
         top.add(setBtn);
         inputDialog.add(top, BorderLayout.NORTH);
 
-        // ---------------- TABLE ----------------
-        tableModel = new DefaultTableModel(new String[]{"Request #", "Value"}, 0);
+        // Table
+        tableModel = new DefaultTableModel(new String[]{"Location #", "Value"}, 0);
         table = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(table);
         inputDialog.add(scrollPane, BorderLayout.CENTER);
 
-        // ---------------- BOTTOM PANEL ----------------
+        // Bottom Panel
         JPanel bottom = new JPanel(new FlowLayout());
         bottom.add(new JLabel("Head Position:"));
-        headField = new JTextField(5);
+        JTextField headField = new JTextField(5);
         bottom.add(headField);
 
         bottom.add(new JLabel("Direction:"));
-        dirBox = new JComboBox<>(new String[]{"Right", "Left"});
+        JComboBox<String> dirBox = new JComboBox<>(new String[]{"Right", "Left"});
         bottom.add(dirBox);
 
         submitButton = new JButton("Run C-SCAN");
         bottom.add(submitButton);
         inputDialog.add(bottom, BorderLayout.SOUTH);
 
-        // ---------------- ACTIONS ----------------
+        // Actions
         setBtn.addActionListener((ActionEvent e) -> {
             try {
                 int n = Integer.parseInt(countField.getText().trim());
                 if (n < 2 || n > 12) {
                     JOptionPane.showMessageDialog(inputDialog,
-                            "Queue items must be between 2 and 12",
+                            "Number of requests must be between 2 and 12",
                             "Invalid Input",
                             JOptionPane.WARNING_MESSAGE);
                     return;
                 }
 
                 tableModel.setRowCount(0);
-                for (int i = 0; i < n; i++)
+                for (int i = 0; i < n; i++) {
                     tableModel.addRow(new Object[]{"Request " + (i + 1), ""});
+                }
 
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(inputDialog,
-                        "Enter a valid number of queue items!");
+                        "Enter a valid number of requests!");
             }
         });
 
@@ -95,16 +92,12 @@ public class CScan implements OperatingSystemAlgorithm {
             try {
                 if (table.isEditing()) table.getCellEditor().stopCellEditing();
 
-                List<Integer> req = new ArrayList<>();
+                List<Integer> requests = new ArrayList<>();
                 for (int i = 0; i < tableModel.getRowCount(); i++) {
-                    Object valObj = tableModel.getValueAt(i, 1);
-                    if (valObj == null || valObj.toString().trim().isEmpty())
-                        throw new NumberFormatException();
-
-                    int val = Integer.parseInt(valObj.toString().trim());
+                    int val = Integer.parseInt(tableModel.getValueAt(i, 1).toString().trim());
                     if (val < 0 || val > 999)
-                        throw new IllegalArgumentException("Request " + (i + 1) + " out of range (0–999).");
-                    req.add(val);
+                        throw new IllegalArgumentException("Location " + (i + 1) + " out of range (0–999).");
+                    requests.add(val);
                 }
 
                 int head = Integer.parseInt(headField.getText().trim());
@@ -113,11 +106,11 @@ public class CScan implements OperatingSystemAlgorithm {
 
                 String direction = dirBox.getSelectedItem().toString();
 
-                // Run the C-SCAN algorithm
-                List<Integer> seq = CScanAlgorithm.run(req, head, direction);
+                //Run C-Scan 
+                List<Integer> seq = CScanAlgorithm.run(requests, head, direction);
                 int totalSeek = CScanAlgorithm.computeSeekTime(seq);
 
-                // Show result graph
+                //Show Graph 
                 JFrame graphFrame = new JFrame("C-SCAN Graph");
                 graphFrame.add(new CScanGraph(seq, totalSeek));
                 graphFrame.pack();
@@ -126,14 +119,9 @@ public class CScan implements OperatingSystemAlgorithm {
 
                 inputDialog.dispose();
 
-            } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(inputDialog,
-                        ex.getMessage(),
-                        "Input Error",
-                        JOptionPane.ERROR_MESSAGE);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(inputDialog,
-                        "Please enter valid numbers in all fields!",
+                        ex.getMessage(),
                         "Input Error",
                         JOptionPane.ERROR_MESSAGE);
             }
@@ -141,56 +129,37 @@ public class CScan implements OperatingSystemAlgorithm {
 
         inputDialog.setVisible(true);
     }
-}
 
-    //  C-SCAN ALGORITHM
-    public static class CScanAlgorithm {
-
+    //C-Scan Algorithm 
+    static class CScanAlgorithm {
         public static List<Integer> run(List<Integer> req, int head, String direction) {
-
             int diskMax = 999;
 
             List<Integer> left = new ArrayList<>();
             List<Integer> right = new ArrayList<>();
 
             for (int r : req) {
-                if (r < head)
-                    left.add(r);
-                else
-                    right.add(r);
+                if (r < head) left.add(r);
+                else right.add(r);
             }
-
             left.sort(Integer::compareTo);
             right.sort(Integer::compareTo);
 
             List<Integer> seq = new ArrayList<>();
             seq.add(head);
 
-            boolean moveRight = direction.startsWith("Right");
-
-            // go to 999
-            if(moveRight){
+            if (direction.startsWith("Right")) {
                 seq.addAll(right);
-                if (seq.get(seq.size() - 1) != diskMax){
-                    seq.add(diskMax);
-                }
+                if (seq.get(seq.size() - 1) != diskMax) seq.add(diskMax);
                 seq.add(0);
-
                 seq.addAll(left);
-            //go to 0    
-            }else{
-                for (int i = left.size() - 1; i >= 0; i--)
-                    seq.add(left.get(i));
-
-                if (seq.get(seq.size() - 1) != 0)
-                    seq.add(0);
-
+            } else {
+                for (int i = left.size() - 1; i >= 0; i--) seq.add(left.get(i));
+                if (seq.get(seq.size() - 1) != 0) seq.add(0);
                 seq.add(diskMax);
-
                 seq.addAll(right);
             }
             return seq;
-
         }
 
         public static int computeSeekTime(List<Integer> seq) {
@@ -202,11 +171,8 @@ public class CScan implements OperatingSystemAlgorithm {
         }
     }
 
-
-
-    // GRAPH PANEL
-    public static class CScanGraph extends JPanel {
-
+    //Graph Panel 
+    static class CScanGraph extends JPanel {
         private final List<Integer> seq;
         private final int totalSeek;
 
@@ -220,74 +186,45 @@ public class CScan implements OperatingSystemAlgorithm {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-
             Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            int leftX = 50;
-            int rightX = getWidth() - 50;
-            int yAxis = 80;
+            int leftX = 50, rightX = getWidth() - 50, yAxis = 80;
 
-            // line
+            // horizontal line
             g2.setColor(Color.BLACK);
             g2.drawLine(leftX, yAxis, rightX, yAxis);
 
-            g2.setStroke(new BasicStroke(1));
-
             // ticks
-            int[] ticks = {0, 50, 100, 150, 200, 250, 300, 350, 400, 450,500,550, 600, 650, 700, 750, 800, 850, 900, 950, 999};
-            for (int t : ticks) {
+            for (int t = 0; t <= 999; t += 50) {
                 int x = map(t, 0, 999, leftX, rightX);
                 g2.drawLine(x, yAxis - 5, x, yAxis + 5);
-                g2.drawString(String.valueOf(t), x - 3, yAxis - 25);
+                g2.drawString(String.valueOf(t), x - 5, yAxis - 25);
             }
 
             // seek lines
             g2.setColor(Color.RED.darker());
             g2.setStroke(new BasicStroke(2));
-
             for (int i = 0; i < seq.size() - 1; i++) {
                 int x1 = map(seq.get(i), 0, 999, leftX, rightX);
                 int x2 = map(seq.get(i + 1), 0, 999, leftX, rightX);
                 int y1 = yAxis + 40 + i * 20;
                 int y2 = yAxis + 40 + (i + 1) * 20;
-
                 g2.drawLine(x1, y1, x2, y2);
-                drawArrow(g2, x1, y1, x2, y2);
             }
 
-            // Footer background box
-            int footerY = getHeight() - 70;
-            g2.setColor(new Color(230, 230, 230));
-            g2.fillRect(0, footerY, getWidth(), 70);
-
-            // Divider line
-            g2.setColor(new Color(50, 50, 50));
-            g2.drawLine(leftX, yAxis, rightX, yAxis);
-
-            // Total seek text
+            // total seek
             g2.setColor(Color.BLACK);
             g2.setFont(new Font("Arial", Font.BOLD, 18));
-            g2.drawString("Total Head Movement: " + totalSeek, 20, footerY + 40);
+            g2.drawString("Total Head Movement: " + totalSeek, 20, getHeight() - 40);
         }
 
         private int map(int value, int minIn, int maxIn, int minOut, int maxOut) {
             return (value - minIn) * (maxOut - minOut) / (maxIn - minIn) + minOut;
         }
-
-        private void drawArrow(Graphics2D g2, int x1, int y1, int x2, int y2) {
-            double angle = Math.atan2(y2 - y1, x2 - x1);
-            int len = 10;
-
-            int ax1 = (int) (x2 - len * Math.cos(angle - Math.PI / 6));
-            int ay1 = (int) (y2 - len * Math.sin(angle - Math.PI / 6));
-            g2.drawLine(x2, y2, ax1, ay1);
-
-            int ax2 = (int) (x2 - len * Math.cos(angle + Math.PI / 6));
-            int ay2 = (int) (y2 - len * Math.sin(angle + Math.PI / 6));
-            g2.drawLine(x2, y2, ax2, ay2);
-        }
     }
+}
+
 
 
 
