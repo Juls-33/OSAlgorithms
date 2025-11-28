@@ -46,7 +46,7 @@ public class MainGui {
     public MainGui() {
         santosPrioAlgo = new PreemptivePriority();
         teodoroRRAlgo = new RoundRobin();
-//        larazeCSAlgo = new CircularScan();
+        larazeCSAlgo = new CircularScan2();
         startApp();
     }
     

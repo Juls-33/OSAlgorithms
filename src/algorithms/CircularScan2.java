@@ -8,7 +8,7 @@ import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CScan implements OperatingSystemAlgorithm {
+public class CircularScan2 implements OperatingSystemAlgorithm {
 
     private JDialog inputDialog;
     private JTable table;
@@ -141,9 +141,7 @@ public class CScan implements OperatingSystemAlgorithm {
 
         inputDialog.setVisible(true);
     }
-}
-
-    //  C-SCAN ALGORITHM
+//  C-SCAN ALGORITHM
     public static class CScanAlgorithm {
 
         public static List<Integer> run(List<Integer> req, int head, String direction) {
@@ -201,10 +199,8 @@ public class CScan implements OperatingSystemAlgorithm {
             return sum;
         }
     }
-
-
-
-    // GRAPH PANEL
+    
+ // GRAPH PANEL
     public static class CScanGraph extends JPanel {
 
         private final List<Integer> seq;
@@ -288,6 +284,13 @@ public class CScan implements OperatingSystemAlgorithm {
             g2.drawLine(x2, y2, ax2, ay2);
         }
     }
+}
+
+    
+
+
+
+    
 
 
 
