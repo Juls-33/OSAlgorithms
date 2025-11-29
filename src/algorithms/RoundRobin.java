@@ -12,6 +12,9 @@ public class RoundRobin implements OperatingSystemAlgorithm {
     public String getInstructions() {
         return "<html><b>Round Robin Scheduling</b><br><br>"
                 + "Each process is given a fixed time slice (Time Quantum).<br>"
+                +"1. Enter the number of processes (2 to 12).<br>"
+                + "2. Fill input modals (Arrival, Burst).<br>"
+                + "3. Enter the Time Quantum<br>"
                 + "<b>Do you want to continue?</b></html>";
     }
 
@@ -22,6 +25,21 @@ public class RoundRobin implements OperatingSystemAlgorithm {
             // Inputs
             String intString = JOptionPane.showInputDialog(null, "Enter Number of Processes: ");
             if (intString == null) return;
+            try {
+                int num = Integer.parseInt(intString);
+                if (num <= 1) {
+                    new NumberFormatException(); 
+                    JOptionPane.showMessageDialog(null, "Please enter a number from 1 to 12.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (num > 12) {
+                    JOptionPane.showMessageDialog(null, "Too many processes! Please enter a number from 1 to 12.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Please enter a valid positive number. (2 to 12 processes)", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             int num = Integer.parseInt(intString.trim());
 
             ArrayList<RRProcess> processes = new ArrayList<>();

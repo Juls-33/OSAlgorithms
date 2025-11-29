@@ -57,12 +57,12 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
 
         try {
             num = Integer.parseInt(numInput);
-            if (num <= 0) {
+            if (num <= 1) {
                 new NumberFormatException(); 
-                JOptionPane.showMessageDialog(null, "Too many processes! Please enter a number from 1 to 12.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Please enter a number from 1 to 12.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (num ==1 || num > 12) {
+            if (num > 12) {
                 JOptionPane.showMessageDialog(null, "Too many processes! Please enter a number from 1 to 12.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
