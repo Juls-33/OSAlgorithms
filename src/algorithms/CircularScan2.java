@@ -10,9 +10,8 @@ import java.util.List;
 public class CircularScan2 implements OperatingSystemAlgorithm {
 
     private JDialog inputDialog;
-    private JTable table;
+    private JTable requestTable;
     private DefaultTableModel tableModel;
-    private JButton submitButton;
 
     @Override
     public String getInstructions() {
@@ -29,6 +28,11 @@ public class CircularScan2 implements OperatingSystemAlgorithm {
 
     @Override
     public void run() {
+        createInputDialog();
+    }
+
+    //Input
+    private void createInputDialog() {
         inputDialog = new JDialog();
         inputDialog.setTitle("C-SCAN Input");
         inputDialog.setModal(true);
@@ -36,154 +40,181 @@ public class CircularScan2 implements OperatingSystemAlgorithm {
         inputDialog.setLocationRelativeTo(null);
         inputDialog.setLayout(new BorderLayout());
 
-        // Top Panel 
-        JPanel top = new JPanel(new FlowLayout());
-        top.add(new JLabel("Number of Requests:"));
-        JTextField countField = new JTextField(5);
-        top.add(countField);
-        JButton setBtn = new JButton("Set");
-        top.add(setBtn);
-        inputDialog.add(top, BorderLayout.NORTH);
+        // requests
+        JPanel topPanel = new JPanel(new FlowLayout());
+        topPanel.add(new JLabel("Number of Requests:"));
+        JTextField requestCountField = new JTextField(5);
+        topPanel.add(requestCountField);
 
-        // Table
-        tableModel = new DefaultTableModel(new String[]{"Location #", "Value"}, 0);
-        table = new JTable(tableModel);
-        JScrollPane scrollPane = new JScrollPane(table);
-        inputDialog.add(scrollPane, BorderLayout.CENTER);
+        JButton setRequestCountBtn = new JButton("Set");
+        topPanel.add(setRequestCountBtn);
+        inputDialog.add(topPanel, BorderLayout.NORTH);
 
-        // Bottom Panel
-        JPanel bottom = new JPanel(new FlowLayout());
-        bottom.add(new JLabel("Head Position:"));
+        // requests table
+        tableModel = new DefaultTableModel(new String[]{"Request #", "Value"}, 0);
+        requestTable = new JTable(tableModel);
+        JScrollPane tableScroll = new JScrollPane(requestTable);
+        inputDialog.add(tableScroll, BorderLayout.CENTER);
+
+        //Head position and direction
+        JPanel bottomPanel = new JPanel(new FlowLayout());
+        bottomPanel.add(new JLabel("Head Position:"));
         JTextField headField = new JTextField(5);
-        bottom.add(headField);
+        bottomPanel.add(headField);
 
-        bottom.add(new JLabel("Direction:"));
-        JComboBox<String> dirBox = new JComboBox<>(new String[]{"Right", "Left"});
-        bottom.add(dirBox);
+        bottomPanel.add(new JLabel("Direction:"));
+        JComboBox<String> directionBox = new JComboBox<>(new String[]{"Right", "Left"});
+        bottomPanel.add(directionBox);
 
-        submitButton = new JButton("Run C-SCAN");
-        bottom.add(submitButton);
-        inputDialog.add(bottom, BorderLayout.SOUTH);
+        JButton runButton = new JButton("Run C-SCAN");
+        bottomPanel.add(runButton);
+        inputDialog.add(bottomPanel, BorderLayout.SOUTH);
 
-        // Actions
-        setBtn.addActionListener((ActionEvent e) -> {
-            try {
-                int n = Integer.parseInt(countField.getText().trim());
-                if (n < 2 || n > 12) {
-                    JOptionPane.showMessageDialog(inputDialog,
-                            "Number of requests must be between 2 and 12",
-                            "Invalid Input",
-                            JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-
-                tableModel.setRowCount(0);
-                for (int i = 0; i < n; i++) {
-                    tableModel.addRow(new Object[]{"Request " + (i + 1), ""});
-                }
-
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(inputDialog,
-                        "Enter a valid number of requests!");
-            }
-        });
-
-        submitButton.addActionListener((ActionEvent e) -> {
-            try {
-                if (table.isEditing()) table.getCellEditor().stopCellEditing();
-
-                List<Integer> requests = new ArrayList<>();
-                for (int i = 0; i < tableModel.getRowCount(); i++) {
-                    int val = Integer.parseInt(tableModel.getValueAt(i, 1).toString().trim());
-                    if (val < 0 || val > 999)
-                        throw new IllegalArgumentException("Location " + (i + 1) + " out of range (0–999).");
-                    requests.add(val);
-                }
-
-                int head = Integer.parseInt(headField.getText().trim());
-                if (head < 0 || head > 999)
-                    throw new IllegalArgumentException("Head position must be 0–999.");
-
-                String direction = dirBox.getSelectedItem().toString();
-
-                //Run C-Scan 
-                List<Integer> seq = CScanAlgorithm.run(requests, head, direction);
-                int totalSeek = CScanAlgorithm.computeSeekTime(seq);
-
-                //Show Graph 
-                JFrame graphFrame = new JFrame("C-SCAN Graph");
-                graphFrame.add(new CScanGraph(seq, totalSeek));
-                graphFrame.pack();
-                graphFrame.setLocationRelativeTo(null);
-                graphFrame.setVisible(true);
-
-                inputDialog.dispose();
-
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(inputDialog,
-                        ex.getMessage(),
-                        "Input Error",
-                        JOptionPane.ERROR_MESSAGE);
-            }
-        });
+        //Buttons
+        setRequestCountBtn.addActionListener(e -> populateTable(requestCountField));
+        runButton.addActionListener(e -> processInput(headField, directionBox));
 
         inputDialog.setVisible(true);
     }
-//  C-SCAN ALGORITHM
-    public static class CScanAlgorithm {
 
-    //C-Scan Algorithm 
-    static class CScanAlgorithm {
-        public static List<Integer> run(List<Integer> req, int head, String direction) {
-            int diskMax = 999;
-
-            List<Integer> left = new ArrayList<>();
-            List<Integer> right = new ArrayList<>();
-
-            for (int r : req) {
-                if (r < head) left.add(r);
-                else right.add(r);
+    private void populateTable(JTextField requestCountField) {
+        try {
+            int count = Integer.parseInt(requestCountField.getText().trim());
+            if (count < 2 || count > 12) {
+                JOptionPane.showMessageDialog(inputDialog,
+                        "Number of requests must be between 2 and 12",
+                        "Invalid Input",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
             }
-            left.sort(Integer::compareTo);
-            right.sort(Integer::compareTo);
 
-            List<Integer> seq = new ArrayList<>();
-            seq.add(head);
-
-            if (direction.startsWith("Right")) {
-                seq.addAll(right);
-                if (seq.get(seq.size() - 1) != diskMax) seq.add(diskMax);
-                seq.add(0);
-                seq.addAll(left);
-            } else {
-                for (int i = left.size() - 1; i >= 0; i--) seq.add(left.get(i));
-                if (seq.get(seq.size() - 1) != 0) seq.add(0);
-                seq.add(diskMax);
-                seq.addAll(right);
+            tableModel.setRowCount(0);
+            for (int i = 0; i < count; i++) {
+                tableModel.addRow(new Object[]{"Request " + (i + 1), ""});
             }
-            return seq;
-        }
 
-        public static int computeSeekTime(List<Integer> seq) {
-            int sum = 0;
-            for (int i = 0; i < seq.size() - 1; i++) {
-                sum += Math.abs(seq.get(i + 1) - seq.get(i));
-            }
-            return sum;
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(inputDialog,
+                    "Enter a valid number of requests!");
         }
     }
 
-    //Graph Panel 
-    static class CScanGraph extends JPanel {
-    
- // GRAPH PANEL
+    private void processInput(JTextField headField, JComboBox<String> directionBox) {
+        try {
+            if (requestTable.isEditing()) requestTable.getCellEditor().stopCellEditing();
+
+            List<Integer> requests = new ArrayList<>();
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                int value = Integer.parseInt(tableModel.getValueAt(i, 1).toString().trim());
+                if (value < 0 || value > 999)
+                    throw new IllegalArgumentException("Request " + (i + 1) + " must be 0–999.");
+                requests.add(value);
+            }
+
+            int headPosition = Integer.parseInt(headField.getText().trim());
+            if (headPosition < 0 || headPosition > 999)
+                throw new IllegalArgumentException("Head position must be 0–999.");
+
+            String direction = directionBox.getSelectedItem().toString();
+
+            // Run c-scan
+            List<Integer> sequence = CScanAlgorithm.run(requests, headPosition, direction);
+            int totalSeek = CScanAlgorithm.computeSeekTime(sequence);
+
+            // Show graph
+            showGraph(sequence, totalSeek);
+
+            inputDialog.dispose();
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(inputDialog,
+                    ex.getMessage(),
+                    "Input Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // C-scan Algo
+    public static class CScanAlgorithm {
+
+        public static List<Integer> run(List<Integer> requests, int head, String direction) {
+            int diskMax = 999;
+            List<Integer> left = new ArrayList<>();
+            List<Integer> right = new ArrayList<>();
+
+            for (int r : requests) {
+                if (r < head) left.add(r);
+                else right.add(r);
+            }
+
+            left.sort(Integer::compareTo);
+            right.sort(Integer::compareTo);
+
+            List<Integer> sequence = new ArrayList<>();
+            sequence.add(head);
+
+            if (direction.startsWith("Right")) {
+                sequence.addAll(right);
+                if (!right.isEmpty() && sequence.get(sequence.size() - 1) != diskMax) sequence.add(diskMax);
+                sequence.add(0);
+                sequence.addAll(left);
+            } else {
+                for (int i = left.size() - 1; i >= 0; i--) sequence.add(left.get(i));
+                if (!left.isEmpty() && sequence.get(sequence.size() - 1) != 0) sequence.add(0);
+                sequence.add(diskMax);
+                for (int i = right.size() - 1; i >= 0; i--) sequence.add(right.get(i));
+            }
+
+            return sequence;
+        }
+
+        public static int computeSeekTime(List<Integer> sequence) {
+            int total = 0;
+            for (int i = 0; i < sequence.size() - 1; i++) {
+                total += Math.abs(sequence.get(i + 1) - sequence.get(i));
+            }
+            return total;
+        }
+    }
+
+    //Graph part
+    private void showGraph(List<Integer> sequence, int totalSeek) {
+        JFrame frame = new JFrame("C-SCAN Graph");
+        frame.setLayout(new BorderLayout());
+
+        // Graph panel
+        CScanGraph graphPanel = new CScanGraph(sequence, totalSeek);
+        frame.add(graphPanel, BorderLayout.CENTER);
+
+        // Footer panel
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setBackground(new Color(230, 230, 230));
+        footer.setPreferredSize(new Dimension(graphPanel.getWidth(), 50));
+
+        JLabel totalLabel = new JLabel("Total Head Movement: " + totalSeek);
+        totalLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        totalLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        footer.add(totalLabel, BorderLayout.WEST);
+
+        JButton backButton = new JButton("Back to Home");
+        backButton.setFont(new Font("SansSerif", Font.BOLD, 14));
+        backButton.addActionListener(e -> frame.dispose());
+        footer.add(backButton, BorderLayout.EAST);
+
+        frame.add(footer, BorderLayout.SOUTH);
+
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+
     public static class CScanGraph extends JPanel {
 
-        private final List<Integer> seq;
+        private final List<Integer> sequence;
         private final int totalSeek;
 
-        public CScanGraph(List<Integer> seq, int totalSeek) {
-            this.seq = seq;
+        public CScanGraph(List<Integer> sequence, int totalSeek) {
+            this.sequence = sequence;
             this.totalSeek = totalSeek;
             setPreferredSize(new Dimension(1000, 700));
             setBackground(Color.WHITE);
@@ -195,41 +226,53 @@ public class CircularScan2 implements OperatingSystemAlgorithm {
             Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            int leftX = 50, rightX = getWidth() - 50, yAxis = 80;
+            int leftMargin = 50, rightMargin = getWidth() - 50, baseY = 80;
 
-            // horizontal line
+            // Horizontal line
             g2.setColor(Color.BLACK);
-            g2.drawLine(leftX, yAxis, rightX, yAxis);
+            g2.drawLine(leftMargin, baseY, rightMargin, baseY);
 
-            // ticks
+            // Ticks and labels
             for (int t = 0; t <= 999; t += 50) {
-                int x = map(t, 0, 999, leftX, rightX);
-                g2.drawLine(x, yAxis - 5, x, yAxis + 5);
-                g2.drawString(String.valueOf(t), x - 5, yAxis - 25);
+                int x = map(t, 0, 999, leftMargin, rightMargin);
+                g2.drawLine(x, baseY - 5, x, baseY + 5);
+                g2.drawString(String.valueOf(t), x - 5, baseY - 25);
             }
 
-            // seek lines
+            // Seek lines with arrows
             g2.setColor(Color.RED.darker());
             g2.setStroke(new BasicStroke(2));
-            for (int i = 0; i < seq.size() - 1; i++) {
-                int x1 = map(seq.get(i), 0, 999, leftX, rightX);
-                int x2 = map(seq.get(i + 1), 0, 999, leftX, rightX);
-                int y1 = yAxis + 40 + i * 20;
-                int y2 = yAxis + 40 + (i + 1) * 20;
+            for (int i = 0; i < sequence.size() - 1; i++) {
+                int x1 = map(sequence.get(i), 0, 999, leftMargin, rightMargin);
+                int x2 = map(sequence.get(i + 1), 0, 999, leftMargin, rightMargin);
+                int y1 = baseY + 40 + i * 20;
+                int y2 = baseY + 40 + (i + 1) * 20;
                 g2.drawLine(x1, y1, x2, y2);
+                drawArrow(g2, x1, y1, x2, y2);
             }
-
-            // total seek
-            g2.setColor(Color.BLACK);
-            g2.setFont(new Font("Arial", Font.BOLD, 18));
-            g2.drawString("Total Head Movement: " + totalSeek, 20, getHeight() - 40);
         }
 
         private int map(int value, int minIn, int maxIn, int minOut, int maxOut) {
             return (value - minIn) * (maxOut - minOut) / (maxIn - minIn) + minOut;
         }
+
+        private void drawArrow(Graphics2D g2, int x1, int y1, int x2, int y2) {
+            double angle = Math.atan2(y2 - y1, x2 - x1);
+            int len = 10;
+
+            int ax1 = (int) (x2 - len * Math.cos(angle - Math.PI / 6));
+            int ay1 = (int) (y2 - len * Math.sin(angle - Math.PI / 6));
+            g2.drawLine(x2, y2, ax1, ay1);
+
+            int ax2 = (int) (x2 - len * Math.cos(angle + Math.PI / 6));
+            int ay2 = (int) (y2 - len * Math.sin(angle + Math.PI / 6));
+            g2.drawLine(x2, y2, ax2, ay2);
+        }
     }
 }
+
+
+
 
     
 
