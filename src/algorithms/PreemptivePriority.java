@@ -98,7 +98,7 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
 
         // input to table
         inputDialog = new JDialog();
-        inputDialog.setTitle("Input positive integer numbers");
+        inputDialog.setTitle("Input positive integer numbers (up to 1000)");
         inputDialog.setModal(true);
         inputDialog.setLayout(new BorderLayout());
         inputDialog.add(new JScrollPane(table), BorderLayout.CENTER);
@@ -308,6 +308,7 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
         NumberFormatter formatter = new NumberFormatter(NumberFormat.getIntegerInstance());
         formatter.setValueClass(Integer.class);
         formatter.setMinimum(minimumValue);
+        formatter.setMaximum(1000);
         formatter.setAllowsInvalid(true);
         formatter.setCommitsOnValidEdit(true);
         ((NumberFormat) formatter.getFormat()).setGroupingUsed(false);
@@ -362,6 +363,13 @@ public class PreemptivePriority implements OperatingSystemAlgorithm {
 
                 try {
                     ftf.commitEdit();
+                    Object val = ftf.getValue();
+                    if (val instanceof Number) {
+                        int num = ((Number) val).intValue();
+                        if (num > 1000) { 
+                            return false; 
+                        }
+                    }
                 } catch (Exception e) {
                     return false;
                 }
