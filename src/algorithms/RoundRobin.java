@@ -5,6 +5,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.*;
+import java.util.Queue;
 
 public class RoundRobin implements OperatingSystemAlgorithm {
 
@@ -22,46 +23,41 @@ public class RoundRobin implements OperatingSystemAlgorithm {
     public void run() {
 
         try {
-            // Inputs
-            String intString = JOptionPane.showInputDialog(null, "Enter Number of Processes: ");
-            if (intString == null) return;
-            try {
-                int num = Integer.parseInt(intString);
-                if (num <= 1) {
-                    new NumberFormatException(); 
-                    JOptionPane.showMessageDialog(null, "Please enter a number from 1 to 12.", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                if (num > 12) {
-                    JOptionPane.showMessageDialog(null, "Too many processes! Please enter a number from 1 to 12.", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(null, "Please enter a valid positive number. (2 to 12 processes)", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            int num = Integer.parseInt(intString.trim());
+            //Number of Processess Input
+            int num = validateInputs("Enter Number of Processes (2-12): ", 2,12);
+            if (num == -1) return;
+        
 
             ArrayList<RRProcess> processes = new ArrayList<>();
             ArrayList<RRGanttChart> ganttChart = new ArrayList<>();
 
+            //Arrival and Burst Time Inputs
             for (int i = 0; i < num; i++) {
                 String pid = "P" + (i + 1);
-                String atString = JOptionPane.showInputDialog(null, "Arrival Time of " + pid + ":");
-                String btString = JOptionPane.showInputDialog(null, "Burst Time of " + pid + ":");
-                if (atString == null || btString == null) return;
 
-                int at = Integer.parseInt(atString.trim());
-                int bt = Integer.parseInt(btString.trim());
+                int at = validateInputs("Arrival Time of " + pid + " (0 or above):", 0,500);
+                if (at == -1) return;
+
+                int bt = validateInputs("Burst Time of " + pid + " (must be > 0):", 1,500);
+                if (bt == -1) return;
 
                 processes.add(new RRProcess(pid, at, bt));
             }
+            //Time Quantum Input
+            int tq = validateInputs("Enter Time Quantum (must be > 0):", 1,100);
+            if (tq == -1) return;
 
-            String tqString = JOptionPane.showInputDialog(null, "Enter Time Quantum: ");
-            if (tqString == null) return;
-            int tq = Integer.parseInt(tqString.trim());
+            HashMap<String, Color> colorMap = new HashMap<>();
+            Random rand = new Random();
+            for (RRProcess p : processes) {
+                float r = rand.nextFloat() * 0.5f + 0.5f;
+                float g = rand.nextFloat() * 0.5f + 0.5f;
+                float b = rand.nextFloat() * 0.5f + 0.5f;
+                colorMap.put(p.pid, new Color(r, g, b));
+            }
+            colorMap.put("IDLE", Color.LIGHT_GRAY);
 
-            // Logic
+            //Logic
             processes.sort(Comparator.comparingInt(p -> p.arrivalTime));
             Queue<RRProcess> queue = new LinkedList<>();
 
@@ -70,8 +66,9 @@ public class RoundRobin implements OperatingSystemAlgorithm {
             int index = 0;
 
             if (!processes.isEmpty() && processes.get(0).arrivalTime > currentTime) {
+                ganttChart.add(new RRGanttChart("IDLE", currentTime, processes.get(0).arrivalTime));
                 currentTime = processes.get(0).arrivalTime;
-            }
+            }           
 
             while (completed < num) {
                 while (index < num && processes.get(index).arrivalTime <= currentTime) {
@@ -122,15 +119,16 @@ public class RoundRobin implements OperatingSystemAlgorithm {
             processes.sort(Comparator.comparing(p -> Integer.parseInt(p.pid.substring(1))));
 
             // Show results
-            showDashboardWindow(processes, ganttChart, tq);
+            showDashboardWindow(processes, ganttChart, tq, colorMap);
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
             e.printStackTrace();
         }
+        
     }
 
-    private void showDashboardWindow(ArrayList<RRProcess> processes, ArrayList<RRGanttChart> ganttChart, int tq) {
+    private void showDashboardWindow(ArrayList<RRProcess> processes, ArrayList<RRGanttChart> ganttChart, int tq, HashMap<String, Color> colorMap) {
 
         JFrame frame = new JFrame("Round Robin Results");
         frame.setSize(900, 600);
@@ -187,7 +185,7 @@ public class RoundRobin implements OperatingSystemAlgorithm {
                     int barW = (int) ((double) dur / totalTime * width);
                     int barX = x + (int) ((double) entry.startTime / totalTime * width);
 
-                    g.setColor(entry.pid.equals("IDLE") ? Color.LIGHT_GRAY : Color.CYAN);
+                    g.setColor(colorMap.getOrDefault(entry.pid, Color.CYAN));
                     g.fillRect(barX, y, barW, h);
                     g.setColor(Color.BLACK);
                     g.drawRect(barX, y, barW, h);
@@ -199,6 +197,8 @@ public class RoundRobin implements OperatingSystemAlgorithm {
                 }
 
                 g.drawString(String.valueOf(totalTime), x + width, y + h + 15);
+
+
             }
         };
         ganttPanel.setPreferredSize(new Dimension(800, 150));
@@ -220,5 +220,31 @@ public class RoundRobin implements OperatingSystemAlgorithm {
 
         frame.add(mainPanel);
         frame.setVisible(true);
+    }
+
+    private int validateInputs(String message, int min, int max) {
+        while (true) {
+            String input = JOptionPane.showInputDialog(null, message);
+            if (input == null) return -1;  // Cancel
+
+            try {
+                int value = Integer.parseInt(input.trim());
+                if (value < min || value > max) {
+                    JOptionPane.showMessageDialog(null,
+                            "Input must be between " + min + " and " + max + ".",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    continue;
+                } 
+                
+                return value;
+
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null,
+                        "Please enter a valid number.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }
