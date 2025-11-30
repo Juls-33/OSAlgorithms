@@ -129,6 +129,8 @@ public class CircularScan2 implements OperatingSystemAlgorithm {
 
         inputDialog.setVisible(true);
     }
+//  C-SCAN ALGORITHM
+    public static class CScanAlgorithm {
 
     //C-Scan Algorithm 
     static class CScanAlgorithm {
@@ -173,6 +175,10 @@ public class CircularScan2 implements OperatingSystemAlgorithm {
 
     //Graph Panel 
     static class CScanGraph extends JPanel {
+    
+ // GRAPH PANEL
+    public static class CScanGraph extends JPanel {
+
         private final List<Integer> seq;
         private final int totalSeek;
 
@@ -225,6 +231,11 @@ public class CircularScan2 implements OperatingSystemAlgorithm {
     }
 }
 
+    
+
+
+
+    
 
 
 
