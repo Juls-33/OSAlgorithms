@@ -35,10 +35,10 @@ public class RoundRobin implements OperatingSystemAlgorithm {
             for (int i = 0; i < num; i++) {
                 String pid = "P" + (i + 1);
 
-                int at = validateInputs("Arrival Time of " + pid + " (0 or above):", 0,500);
+                int at = validateInputs("Arrival Time of " + pid + " (0 or above):", 0,1000);
                 if (at == -1) return;
 
-                int bt = validateInputs("Burst Time of " + pid + " (must be > 0):", 1,500);
+                int bt = validateInputs("Burst Time of " + pid + " (must be > 0):", 1,1000);
                 if (bt == -1) return;
 
                 processes.add(new RRProcess(pid, at, bt));
